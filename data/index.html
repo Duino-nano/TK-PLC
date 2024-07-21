@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="jp">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="/favicon.ico">
+    <link rel="stylesheet" href="style.css">
+    <title>MeasureLinks設定</title>
+
+</head>
+<body>
+    <h1>MeasureLinks設定</h1>
+
+    <form id="ssidupdateForm" onsubmit="event.preventDefault();">
+        <label for="ssid">WIFI SSID</label>
+        <div>
+            <input type="text" id="ssid" value="" placeholder="SSID">
+            <button>更新</button>
+        </div>
+    </form>
+
+    <form id="psupdateForm" onsubmit="event.preventDefault();">
+        <label for="ps">WIFI パスワード</label>
+        <div>
+            <input type="text" id="ps" value="" placeholder="PASSWORD">
+            <button>更新</button>
+        </div>
+    </form>
+    
+    <form id="gasIdupdateForm" onsubmit="event.preventDefault();">
+        <label for="gasId">GAS DEVID</label>
+        <div>
+            <input type="text" id="gasId" value="" placeholder="GAS DEVID">
+            <button>更新</button>
+        </div>
+    </form>
+    
+    <form id="nfcTypeForm">
+        <label>登録方法</label>
+        <div>
+            <div>
+                <input type="radio" id="userOnly" name="nfcType" value="userOnly" checked >
+                <label for="userOnly">ユーザーのみ</label>
+            </div>
+            <div>
+                <input type="radio" id="farmOnly" name="nfcType" value="farmOnly" >
+                <label for="farmOnly">農場のみ</label>
+            </div>
+            <div>
+                <input type="radio" id="both" name="nfcType" value="both" >
+                <label for="both">両方</label>
+            </div>
+        </div>
+    </form>
+
+    <form id="palletForm">
+        <label>パレット登録重量</label>
+        <div>
+            <label>
+                <div>
+                    <div id="currentWeightLabel">現在重量:</div>
+                    <div id="nowWeight">0.00</div>
+                    <div>kg</div>
+                </div>
+                <div>
+                    <div id="setWeightLabel">登録重量:</div>
+                    <div id="setWeight">0.00</div>
+                    <div>kg</div>
+                </div>
+            </label>
+            <button id="palletButton" >↓登録</button>
+        </div>
+        
+    </form>
+
+    <button id="restartButton">再起動</button>
+    
+    <!-- カスタムモーダル -->
+    <div id="customModal" class="modal">
+        <div class="modal-content">
+            <p id="modalMessage">再起動しますか？</p>
+            <div class="modal-button-area">
+                <button id="confirmButton">はい</button>
+                <button id="cancelButton">いいえ</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
+
