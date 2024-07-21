@@ -1,0 +1,54 @@
+<!-- <form action="/update" method="post">
+  センサー検知からコンベア動作までの時間: <input type="text" name="time1"><br>
+  センサー未検出からコンベア停止までの時間: <input type="text" name="time2"><br>
+  <input type="submit" value="Submit">
+</form> -->
+
+<!DOCTYPE html>
+<html lang="jp">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="/favicon.ico">
+    <link rel="stylesheet" href="style.css">
+    <title>TK-LOADER設定</title>
+
+</head>
+<body>
+    <h1>TK-LOADER設定</h1>
+
+    <form id="time1From" onsubmit="event.preventDefault();">
+        <label for="ssid">センサー検知→コンベア動作開始</label>
+        <div>
+            <input type="text" id="time1" value="" placeholder="time1">
+            <button>更新</button>
+        </div>
+    </form>
+
+    <form id="time2From" onsubmit="event.preventDefault();">
+        <label for="ps">センサー未検出→コンベア停止時間</label>
+        <div>
+            <input type="text" id="time2" value="" placeholder="time2">
+            <button>更新</button>
+        </div>
+    </form>
+    
+
+    <button id="restartButton">再起動</button>
+    
+    <!-- カスタムモーダル -->
+    <div id="customModal" class="modal">
+        <div class="modal-content">
+            <p id="modalMessage">再起動しますか？</p>
+            <div class="modal-button-area">
+                <button id="confirmButton">はい</button>
+                <button id="cancelButton">いいえ</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
+
