@@ -18,7 +18,7 @@
 
 #define SENSOR_IN       (!digitalRead(IN_1))
 #define SET_BOTTOM      (!digitalRead(IN_6))
-// #define OK_IN           digitalRead(IN_2)
+#define HOPPER_IN           (!digitalRead(IN_2))
 // #define NG_IN           digitalRead(IN_3)
 #define BELT_OUT(x)     digitalWrite(OUT_1,x)
 #define LED_OUT(x)      digitalWrite(OUT_3,x)
@@ -51,7 +51,7 @@ void loop() {
   LED_OUT(setWebMain(setKey));
   switch(sq){
     case 0:
-      if(SENSOR_IN){
+      if((SENSOR_IN)&&(HOPPER_IN)){
         timer.setTime(memory_data.waitTime[0]);
         sq++;
       }
@@ -66,7 +66,7 @@ void loop() {
     break;
 
     case 2:
-      if(!SENSOR_IN){
+      if((!SENSOR_IN)||(!HOPPER_IN)){
         timer.setTime(memory_data.waitTime[1]);
         sq++;
       }
