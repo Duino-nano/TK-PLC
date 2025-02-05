@@ -11,6 +11,7 @@ class PageController {
     .then(data => {
       document.getElementById('time1').placeholder = data.time1;
       document.getElementById('time2').placeholder = data.time2;
+      document.getElementById('time3').placeholder = data.time3;
     });
   }
 
@@ -24,10 +25,14 @@ class PageController {
       event.preventDefault();
       this.updateData('time2');
     });
+    document.getElementById('time3From').addEventListener('submit', event => {
+      event.preventDefault();
+      this.updateData('time3');
+    });
     
     document.getElementById('time1').addEventListener('keypress', event => this.allowOnlyNumbers(event));
     document.getElementById('time2').addEventListener('keypress', event => this.allowOnlyNumbers(event));
-
+    document.getElementById('time3').addEventListener('keypress', event => this.allowOnlyNumbers(event));
     document.getElementById('restartButton').addEventListener('click', () => this.restart());
 
     document.getElementById('confirmButton').addEventListener('click', () => this.confirmRestart());

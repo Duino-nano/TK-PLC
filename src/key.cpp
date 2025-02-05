@@ -4,7 +4,7 @@
  *
  *	@brief		キー入力処理
  *
- *	@author		株式会社エムスクエア・ラボ　山形
+ *	@author		山形
  *
  *	@date		create : 2024/01/16
  *

@@ -4,7 +4,7 @@
  *
  *	@brief		EEPROM処理
  *
- *	@author		株式会社エムスクエア・ラボ　山形
+ *	@author		山形
  *
  *	@date		create : 2024/03/16
  *
@@ -14,25 +14,24 @@
 #include <CRC32.h>
 #include "eeprom.hpp"
 /*==========================================================================================
-	外部関数定義
-==========================================================================================*/
-
-
-/*==========================================================================================
-	内部定数定義
+        外部関数定義
 ==========================================================================================*/
 
 /*==========================================================================================
-	内部関数定義
+        内部定数定義
+==========================================================================================*/
+
+/*==========================================================================================
+        内部関数定義
 ==========================================================================================*/
 void eepromSave(void);
 /*==========================================================================================
-	外部変数定義
+        外部変数定義
 ==========================================================================================*/
 MEMORY_DATA memory_data;
 MEMORY_DATA memory_data_buckup;
 /*==========================================================================================
-	内部変数定義
+        内部変数定義
 ==========================================================================================*/
 /**
  *	@var		ssPins
@@ -44,9 +43,8 @@ MEMORY_DATA memory_data_buckup;
  *	@brief		各チャンネルインスタンス
  */
 
-
 /*==========================================================================================
-	関数
+        関数
 ==========================================================================================*/
 
 /**
@@ -54,7 +52,7 @@ MEMORY_DATA memory_data_buckup;
  *	@param		なし
  *	@retval		なし
  */
-void init_EEPROM(){
+void init_EEPROM() {
   CRC32 crc;
   uint32_t crcData;
   EEPROM.begin(sizeof(memory_data) + sizeof(crcData));
@@ -66,15 +64,18 @@ void init_EEPROM(){
   Serial.println();
   Serial.println(memory_data.waitTime[0]);
   Serial.println(memory_data.waitTime[1]);
-  
+  Serial.println(memory_data.waitTime[2]);
+
   Serial.println(crcData);
   Serial.println(crc.finalize());
   // データの整合性を確認
-  if (crc.finalize() != crcData){
-    //保存データが無い場合デフォルトを設定
-    memory_data.waitTime[0] = 1000;
-    memory_data.waitTime[1] = 1000;
-  }  
+  if (crc.finalize() != crcData) {
+    // 保存データが無い場合デフォルトを設定
+    memory_data.waitTime[0] = 100;   // <- 検出>カメラの出力までの待機時間
+    memory_data.waitTime[1] = 50;    // <- カメラへのHigh出力時間
+    memory_data.waitTime[2] = 1000;  // <- エアーの出力時間
+    eepromSave();
+  }
 }
 
 /**
@@ -82,13 +83,13 @@ void init_EEPROM(){
  *	@param		なし
  *	@retval		なし
  */
-void eepromSave(void){
-	CRC32 crc;
-  if(memcmp(&memory_data, &memory_data_buckup, sizeof(memory_data))){ //設定データが変更された場合
+void eepromSave(void) {
+  CRC32 crc;
+  if (memcmp(&memory_data, &memory_data_buckup, sizeof(memory_data))) {  // 設定データが変更された場合
     Serial.print("Serv");
-    crc.update((uint8_t *)&memory_data, sizeof(memory_data));	//CRCデータ生成
-    EEPROM.put(0, memory_data);	//設定データ保存
-    EEPROM.put(sizeof(memory_data), crc.finalize());	//CRCデータを設定データの後に保存
+    crc.update((uint8_t *)&memory_data, sizeof(memory_data));  // CRCデータ生成
+    EEPROM.put(0, memory_data);                                // 設定データ保存
+    EEPROM.put(sizeof(memory_data), crc.finalize());           // CRCデータを設定データの後に保存
     EEPROM.commit();
     memcpy(&memory_data_buckup, &memory_data, sizeof(memory_data));
   }

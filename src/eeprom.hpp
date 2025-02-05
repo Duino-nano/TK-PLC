@@ -4,7 +4,7 @@
  *
  *	@brief		EEPROM処理
  *
- *	@author		株式会社エムスクエア・ラボ　山形
+ *	@author		山形
  *
  *	@date		create : 2024/03/16
  *
@@ -26,7 +26,7 @@
  * @brief		メモリーデータ
  */
 struct MEMORY_DATA{
-  unsigned long waitTime[2];              //設定時間
+  unsigned long waitTime[3];              //設定時間
 };
 
 /**
