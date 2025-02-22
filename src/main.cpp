@@ -8,15 +8,15 @@
 #define OUT_4 18
 #define OUT_5 19
 
-#define IN_1 26
-#define IN_2 25
-#define IN_3 33
+#define IN_1 26  // OK
+#define IN_2 25  // NG
+#define IN_3 33  // 近接センサー
 #define IN_4 32
 #define IN_5 35
 #define IN_6 34
 
-#define CAMERA_SENSOR_IN (!digitalRead(IN_1))
-#define CAMERA_JUDGE_IN (!digitalRead(IN_2))
+#define CAMERA_JUDGE_OK (!digitalRead(IN_1))
+#define CAMERA_JUDGE_NG (!digitalRead(IN_2))
 #define CYLINDER_SENSOR_IN (!digitalRead(IN_3))
 #define SET_BOTTOM (!digitalRead(IN_6))
 // #define NG_IN           digitalRead(IN_3)
@@ -67,35 +67,32 @@ void cameraJudgeMain() {
   static IntervalTimer timer(100);
   bool flag = false;
   switch (sq) {
-    case 0:  // カメラセンサーが検知されたら
-      if (CAMERA_SENSOR_IN) {
+    case 0:  // カメラセンサーからの信号があったら
+      if (CAMERA_JUDGE_OK || CAMERA_JUDGE_NG) {
         sq++;
-        timer.setTime(memory_data.waitTime[0]);
       }
       break;
 
     case 1:  // カメラジャッジ開始
-      CAMERA_OUT(1);
-      if (timer.isWait()) {
-        CAMERA_OUT(0);
-        timer.setTime(memory_data.waitTime[1]);
-        sq++;
+      if (CAMERA_JUDGE_OK) {
+        flag = true;
+      } else if (CAMERA_JUDGE_NG) {
+        flag = false;
       }
-
+      flagData.Buff[flagData.cameraCount] = flag;  // カメラジャッジ結果をバッファに格納
+      flagData.cameraCount++;
+      flagData.differenceCount++;
+      if (flagData.cameraCount >= sizeof(flagData.Buff)) {
+        flagData.cameraCount = 0;
+      }
+      if (flagData.differenceCount >= sizeof(flagData.Buff)) {
+        Serial.println("DifferenceCount Warning");
+      }
+      sq++;
       break;
 
-    case 2:  // カメラNGの場合は
-      flag = CAMERA_JUDGE_IN;
-      if (flag || timer.isWait()) {                  // 　カメラジャッジまたは時間経過で次へ
-        flagData.Buff[flagData.cameraCount] = flag;  // カメラジャッジ結果をバッファに格納
-        flagData.cameraCount++;
-        flagData.differenceCount++;
-        if (flagData.cameraCount >= sizeof(flagData.Buff)) {
-          flagData.cameraCount = 0;
-        }
-        if (flagData.differenceCount >= sizeof(flagData.Buff)) {
-          Serial.println("DifferenceCount Warning");
-        }
+    case 2:  // 信号がなくなるまで待機
+      if (!CAMERA_JUDGE_OK && !CAMERA_JUDGE_NG) {
         sq = 0;
       }
       break;
