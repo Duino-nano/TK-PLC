@@ -20,21 +20,24 @@
 #define CYLINDER_SENSOR_IN (!digitalRead(IN_3))
 #define SET_BOTTOM (!digitalRead(IN_6))
 // #define NG_IN           digitalRead(IN_3)
-#define CAMERA_OUT(x) digitalWrite(OUT_1, x)
-#define CYLINDER_OUT(x) digitalWrite(OUT_2, x)
+// #define CAMERA_OUT(x) digitalWrite(OUT_1, x)
+#define CYLINDER_OUT(x) digitalWrite(OUT_1, x)
 #define LED_OUT(x) digitalWrite(OUT_5, x)
 // #define ALERT_OUT(x)    digitalWrite(OUT_2,x)
 // #define SENSOR_OUT(x)    digitalWrite(OUT_4,x)
 // #define Pushe_OUT(x)    digitalWrite(OUT_5,x)
 void cameraJudgeMain();
 void cylinderMain();
+void timeUpFlag();
 IntervalTimer timer(memory_data.waitTime[0]);
-KeyInput setKey(IN_6, 100, 1000);
+// KeyInput setKey(IN_6);
+KeyInput cylinder(IN_3, "", 1, 1000, 500);
 bool setFlag = false;
 
 typedef struct {
-  uint8_t cameraCount = 0;
-  int differenceCount = 0;
+  uint8_t start       = 0;
+  uint8_t end         = 0;
+  uint16_t setTime[5] = {0};
   bool Buff[5]        = {false};
 } FlagData;
 FlagData flagData;
@@ -51,7 +54,9 @@ void setup() {
   pinMode(IN_3, INPUT);
   pinMode(IN_4, INPUT);
   pinMode(IN_5, INPUT);
-  Serial.begin(9600);
+  Serial.begin(115200);
+  delay(1000);
+  Serial.println("Start");
   init_EEPROM();
   // SENSOR_OUT(1);
   // put your setup code here, to run once:
@@ -60,10 +65,23 @@ void setup() {
 void loop() {
   cameraJudgeMain();
   cylinderMain();
+  timeUpFlag();
+}
+
+void timeUpFlag() {
+  for (int i = 0; i < sizeof(flagData.setTime) / sizeof(flagData.setTime[0]); i++) {
+    if (flagData.setTime[i] != 0) {
+      if (millis() - flagData.setTime[i] > memory_data.waitTime[0]) {  // 1秒経過したら
+        flagData.Buff[i]    = false;
+        flagData.setTime[i] = 0;
+      }
+    }
+  }
 }
 
 void cameraJudgeMain() {
-  static int sq = 0;
+  static uint8_t sq    = 0;
+  static uint8_t oldSq = 0;
   static IntervalTimer timer(100);
   bool flag = false;
   switch (sq) {
@@ -79,13 +97,13 @@ void cameraJudgeMain() {
       } else if (CAMERA_JUDGE_NG) {
         flag = false;
       }
-      flagData.Buff[flagData.cameraCount] = flag;  // カメラジャッジ結果をバッファに格納
-      flagData.cameraCount++;
-      flagData.differenceCount++;
-      if (flagData.cameraCount >= sizeof(flagData.Buff)) {
-        flagData.cameraCount = 0;
+      flagData.Buff[flagData.start]    = flag;  // カメラジャッジ結果をバッファに格納
+      flagData.setTime[flagData.start] = millis();
+      flagData.start++;
+      if (flagData.start > sizeof(flagData.Buff)) {
+        flagData.start = 0;
       }
-      if (flagData.differenceCount >= sizeof(flagData.Buff)) {
+      if (flagData.start == flagData.end) {
         Serial.println("DifferenceCount Warning");
       }
       sq++;
@@ -99,38 +117,51 @@ void cameraJudgeMain() {
 
     default:
       sq = 0;
-      CAMERA_OUT(0);
+      // CAMERA_OUT(0);
       break;
+  }
+
+  if (sq != oldSq) {
+    Serial.println("cameraJudgeMain" + String(sq));
+    oldSq = sq;
   }
 }
 
 void cylinderMain() {
-  static int sq = 0;
+  static uint8_t sq    = 0;
+  static uint8_t oldSq = 0;
   static IntervalTimer timer(100);
   switch (sq) {
     case 0:  // カメラセンサーが検知されたら
-      if (CYLINDER_SENSOR_IN) {
-        if (flagData.Buff[(flagData.cameraCount - ((flagData.differenceCount) % sizeof(flagData.Buff)))]) {  // カメラジャッジ結果をバッファから取り出し,NGの場合は次へ
-          sq++;
-        }
-        flagData.differenceCount--;  // 次のカメラジャッジ結果を取り出すためにカウントを減らす
-        if (flagData.differenceCount < 0) {
-          flagData.differenceCount = 0;
+      if (cylinder.isPush()) {
+        if (flagData.end == flagData.start) {
           Serial.println("DifferenceCount Error");
+          sq++;
+        } else {
+          if (!flagData.Buff[flagData.end]) {  // カメラジャッジ結果をバッファから取り出し,NGの場合は次へ
+            sq++;
+          }
+          flagData.end++;  // 次のカメラジャッジ結果を取り出すためにカウント
+          if (flagData.end > sizeof(flagData.Buff)) {
+            flagData.end = 0;
+          }
         }
       }
+
       break;
 
     case 1:  // シリンダーで押し出し
       CYLINDER_OUT(1);
       timer.setTime(memory_data.waitTime[2]);
+      cylinder.setReleaseTime(memory_data.waitTime[1]);
       sq++;
       break;
 
     case 2:  // シリンダーが動作するまで待機
-      if (timer.isWait()) {
+      if (timer.isWait() || cylinder.isRelease()) {
         sq = 0;
         timer.init();
+        CYLINDER_OUT(0);
       }
       break;
 
@@ -138,5 +169,10 @@ void cylinderMain() {
       sq = 0;
       CYLINDER_OUT(0);
       break;
+  }
+
+  if (sq != oldSq) {
+    Serial.println("cylinderMain" + String(sq));
+    oldSq = sq;
   }
 }

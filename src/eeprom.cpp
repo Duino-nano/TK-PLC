@@ -71,9 +71,9 @@ void init_EEPROM() {
   // データの整合性を確認
   if (crc.finalize() != crcData) {
     // 保存データが無い場合デフォルトを設定
-    memory_data.waitTime[0] = 100;   // <- 検出>カメラの出力までの待機時間
-    memory_data.waitTime[1] = 50;    // <- カメラへのHigh出力時間
-    memory_data.waitTime[2] = 1000;  // <- エアーの出力時間
+    memory_data.waitTime[0] = 1000;   // <- データ保存時間
+    memory_data.waitTime[1] = 50;    // <- エアー出力時間下限
+    memory_data.waitTime[2] = 1000;  // <- エアーの出力時間上限
     eepromSave();
   }
 }
