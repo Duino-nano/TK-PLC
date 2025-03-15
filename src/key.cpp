@@ -121,7 +121,7 @@ bool KeyInput::isLongPush(void) {
     }
   } else {
     if (toggle >= 2) {
-      Serial.println("Longinit");
+      // Serial.println("Longinit");
       toggle = 0;
     }
 
@@ -188,7 +188,7 @@ void KeyInput::init(void) {
   longPushTimer->init();
   releaseTimer->init();
   releaseFlag = false;
-  if(toggle == 2) {
+  if (toggle == 2) {
     Serial.println("init");
     toggle = 3;
   }

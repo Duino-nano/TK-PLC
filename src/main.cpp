@@ -29,16 +29,19 @@
 void cameraJudgeMain();
 void cylinderMain();
 void timeUpFlag();
-IntervalTimer timer(memory_data.waitTime[0]);
+void cylinderTimeOutMain();
+uint8_t getFlagDataCount();
+IntervalTimer cylinderTimer(memory_data.waitTime[1]);
 // KeyInput setKey(IN_6);
-KeyInput cylinder(IN_3, "", 1, 1000, 500);
+KeyInput cylinder(IN_3, "", 1, memory_data.waitTime[2], 1);
 bool setFlag = false;
 
 typedef struct {
-  uint8_t start       = 0;
-  uint8_t end         = 0;
-  uint16_t setTime[5] = {0};
-  bool Buff[5]        = {false};
+  uint8_t start            = 0;
+  uint8_t end              = 0;
+  IntervalTimer timeup[10] = {IntervalTimer(memory_data.waitTime[0]), IntervalTimer(memory_data.waitTime[0]), IntervalTimer(memory_data.waitTime[0]), IntervalTimer(memory_data.waitTime[0]), IntervalTimer(memory_data.waitTime[0]),
+                              IntervalTimer(memory_data.waitTime[0]), IntervalTimer(memory_data.waitTime[0]), IntervalTimer(memory_data.waitTime[0]), IntervalTimer(memory_data.waitTime[0]), IntervalTimer(memory_data.waitTime[0])};
+  bool Buff[10]            = {false};
 } FlagData;
 FlagData flagData;
 
@@ -54,6 +57,7 @@ void setup() {
   pinMode(IN_3, INPUT);
   pinMode(IN_4, INPUT);
   pinMode(IN_5, INPUT);
+  pinMode(IN_6, INPUT);
   Serial.begin(115200);
   delay(1000);
   Serial.println("Start");
@@ -66,14 +70,21 @@ void loop() {
   cameraJudgeMain();
   cylinderMain();
   timeUpFlag();
+  cylinderTimeOutMain();
+  if (SET_BOTTOM) {
+    CYLINDER_OUT(1);
+    cylinderTimer.setTime(memory_data.waitTime[1]);
+  }
 }
 
 void timeUpFlag() {
-  for (int i = 0; i < sizeof(flagData.setTime) / sizeof(flagData.setTime[0]); i++) {
-    if (flagData.setTime[i] != 0) {
-      if (millis() - flagData.setTime[i] > memory_data.waitTime[0]) {  // 1秒経過したら
-        flagData.Buff[i]    = false;
-        flagData.setTime[i] = 0;
+  if (getFlagDataCount()) {
+    if (flagData.timeup[flagData.end].isWait()) {
+      Serial.println("flagData.end" + String(flagData.end));
+      Serial.println("TimeUp");
+      flagData.end++;
+      if (flagData.end >= (sizeof(flagData.Buff) / sizeof(flagData.Buff[0]))) {
+        flagData.end = 0;
       }
     }
   }
@@ -97,10 +108,11 @@ void cameraJudgeMain() {
       } else if (CAMERA_JUDGE_NG) {
         flag = false;
       }
-      flagData.Buff[flagData.start]    = flag;  // カメラジャッジ結果をバッファに格納
-      flagData.setTime[flagData.start] = millis();
+      flagData.Buff[flagData.start] = flag;  // カメラジャッジ結果をバッファに格納
+      flagData.timeup[flagData.start].setTime(memory_data.waitTime[0]);
+      Serial.println("flagData.start" + String(flagData.start));
       flagData.start++;
-      if (flagData.start > sizeof(flagData.Buff)) {
+      if (flagData.start >= (sizeof(flagData.Buff) / sizeof(flagData.Buff[0]))) {
         flagData.start = 0;
       }
       if (flagData.start == flagData.end) {
@@ -121,10 +133,10 @@ void cameraJudgeMain() {
       break;
   }
 
-  if (sq != oldSq) {
-    Serial.println("cameraJudgeMain" + String(sq));
-    oldSq = sq;
-  }
+  // if (sq != oldSq) {
+  //   Serial.println("cameraJudgeMain" + String(sq));
+  //   oldSq = sq;
+  // }
 }
 
 void cylinderMain() {
@@ -132,37 +144,38 @@ void cylinderMain() {
   static uint8_t oldSq = 0;
   static IntervalTimer timer(100);
   switch (sq) {
-    case 0:  // カメラセンサーが検知されたら
-      if (cylinder.isPush()) {
-        if (flagData.end == flagData.start) {
-          Serial.println("DifferenceCount Error");
-          sq++;
-        } else {
+    case 0:
+      if (cylinder.isRelease()) {
+        cylinder.setLongPushTime(memory_data.waitTime[2]);
+        sq++;
+      }
+      break;
+    case 1:
+      if (cylinder.isLongPush()) {
+        if (getFlagDataCount()) {
           if (!flagData.Buff[flagData.end]) {  // カメラジャッジ結果をバッファから取り出し,NGの場合は次へ
             sq++;
+          } else {
+            sq = 0;
           }
           flagData.end++;  // 次のカメラジャッジ結果を取り出すためにカウント
-          if (flagData.end > sizeof(flagData.Buff)) {
+          if (flagData.end >= (sizeof(flagData.Buff) / sizeof(flagData.Buff[0]))) {
             flagData.end = 0;
           }
+        } else {
+          Serial.println("NoData");
+          sq++;
         }
       }
 
       break;
 
-    case 1:  // シリンダーで押し出し
+    case 2:  // シリンダーで押し出し
       CYLINDER_OUT(1);
-      timer.setTime(memory_data.waitTime[2]);
-      cylinder.setReleaseTime(memory_data.waitTime[1]);
-      sq++;
-      break;
-
-    case 2:  // シリンダーが動作するまで待機
-      if (timer.isWait() || cylinder.isRelease()) {
-        sq = 0;
-        timer.init();
-        CYLINDER_OUT(0);
-      }
+      cylinderTimer.setTime(memory_data.waitTime[1]);
+      // timer.setTime(memory_data.waitTime[2]);
+      // cylinder.setReleaseTime(memory_data.waitTime[1]);
+      sq = 0;
       break;
 
     default:
@@ -171,8 +184,25 @@ void cylinderMain() {
       break;
   }
 
-  if (sq != oldSq) {
-    Serial.println("cylinderMain" + String(sq));
-    oldSq = sq;
+  // if (sq != oldSq) {
+  //   Serial.println("cylinderMain" + String(sq));
+  //   oldSq = sq;
+  // }
+}
+
+// シリンダー出力処理
+void cylinderTimeOutMain() {
+  if (cylinderTimer.isWait()) {
+    CYLINDER_OUT(0);
   }
 }
+// FlagDataのカウント数を取得
+uint8_t getFlagDataCount() {
+  uint8_t size = sizeof(flagData.Buff) / sizeof(flagData.Buff[0]);
+  if (flagData.start >= flagData.end) {
+    return flagData.start - flagData.end;
+  } else {
+    return size - (flagData.end - flagData.start);
+  }
+}
+//

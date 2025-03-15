@@ -68,12 +68,13 @@ void init_EEPROM() {
 
   Serial.println(crcData);
   Serial.println(crc.finalize());
+    memory_data.waitTime[0] = 500;  // <- データ保存時間
+    memory_data.waitTime[1] = 20;   // <- エアー出力時間
+    memory_data.waitTime[2] = 1;    // <- 近接判定時間
   // データの整合性を確認
   if (crc.finalize() != crcData) {
     // 保存データが無い場合デフォルトを設定
-    memory_data.waitTime[0] = 1000;   // <- データ保存時間
-    memory_data.waitTime[1] = 50;    // <- エアー出力時間下限
-    memory_data.waitTime[2] = 1000;  // <- エアーの出力時間上限
+    
     eepromSave();
   }
 }
